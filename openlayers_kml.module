@@ -47,6 +47,25 @@ function theme_openlayers_kml_formatter_kml_openlayers($element) {
   // In here, find the KML field, make your map array, and render
   global $base_url;
   $kml = $base_url . '/' . $element['#item']['filepath'];
+  //If it's a KMZ file do a little bit of processing
+  //This will only work with a KMZ file with only one KML and no images
+  //need to add some more logic to finish it off.
+  if ( file_get_mimetype($element['#item']['filepath']) == "application/vnd.google-earth.kmz"){
+  $zip = zip_open(file_check_location($element['#item']['filepath']));
+  if ($zip) {
+  while ($zip_entry = zip_read($zip)) {
+  //need to check if the tmp directory exists, and create it if not
+  $dest = file_create_path("tmp")."/".zip_entry_name($zip_entry);
+  if (zip_entry_open($zip, $zip_entry, "r")) {
+  $kmldata = zip_entry_read($zip_entry, zip_entry_filesize($zip_entry));
+  $fullfilename = file_save_data($buf, $dest,$replace=FILE_EXISTS_REPLACE);
+  zip_entry_close($zip_entry);
+  }
+  }
+  }
+  zip_close($zip);
+  $kml = file_create_url($fullfilename);
+  }
 
   // Get the preset that was chosen in display fields
   if (substr($element['#formatter'], 25) == 'openlayers_kml_formatter_') $preset_name = substr($element['#formatter'], 25);
